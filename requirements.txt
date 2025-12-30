@@ -10,3 +10,5 @@ lightgbm
 pyyaml
 nltk
 mlflow
+flask
+flask-cors
