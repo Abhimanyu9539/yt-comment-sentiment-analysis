@@ -10,6 +10,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 import os
 import matplotlib.pyplot as plt
 import seaborn as sns
+import json
 
 # logging configuration
 logger = logging.getLogger("model_evaluation")
@@ -108,12 +109,29 @@ def log_confusion_matrix(cm, dataset_name):
     plt.close()
 
 
+def save_model_info(run_id: str, model_uri: str, file_path: str) -> None:
+    """
+    Save MLflow model metadata required for registration.
+    """
+    try:
+        model_info = {"run_id": run_id, "model_uri": model_uri}
+
+        with open(file_path, "w") as f:
+            json.dump(model_info, f, indent=4)
+
+        logger.debug("Model info saved to %s", file_path)
+
+    except Exception as e:
+        logger.error("Error while saving model info: %s", e)
+        raise
+
+
 def main():
     mlflow.set_tracking_uri("http://ec2-34-228-9-58.compute-1.amazonaws.com:5000/")
 
     mlflow.set_experiment("dvc-pipeline-runs")
 
-    with mlflow.start_run():
+    with mlflow.start_run() as run:
         try:
             # Load parameters from YAML file
             root_dir = os.path.abspath(
@@ -135,7 +153,15 @@ def main():
                     mlflow.log_param(param_name, param_value)
 
             # Log model and vectorizer
-            mlflow.sklearn.log_model(model, "lgbm_model")
+            mlflow.sklearn.log_model(model, name="lgbm_model")
+
+            artifact_uri = mlflow.get_artifact_uri()
+            model_uri = f"runs:/{run.info.run_id}/lgbm_model"
+            model_path = f"{artifact_uri}/lgbm_model"
+
+            # Save model info
+            save_model_info(run.info.run_id, model_uri, "experiment_info.json")
+
             mlflow.log_artifact(os.path.join(root_dir, "tfidf_vectorizer.pkl"))
 
             # Load test data
