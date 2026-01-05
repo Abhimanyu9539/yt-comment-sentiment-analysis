@@ -5,13 +5,14 @@ import logging
 import yaml
 import mlflow
 import mlflow.sklearn
-from mlflow.models import infer_signature
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.feature_extraction.text import TfidfVectorizer
 import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 import json
+from mlflow.models import infer_signature
+
 
 # logging configuration
 logger = logging.getLogger("model_evaluation")
@@ -148,7 +149,12 @@ def main():
             model = load_model(os.path.join(root_dir, "lgbm_model.pkl"))
             vectorizer = load_vectorizer(os.path.join(root_dir, "tfidf_vectorizer.pkl"))
 
-            # Load test data for signature inference
+            # Log model parameters
+            if hasattr(model, "get_params"):
+                for param_name, param_value in model.get_params().items():
+                    mlflow.log_param(param_name, param_value)
+
+            # Load test data
             test_data = load_data(
                 os.path.join(root_dir, "data/interim/test_processed.csv")
             )
@@ -158,28 +164,29 @@ def main():
             y_test = test_data["category"].values
 
             # Create a DataFrame for signature inference (using first few rows as an example)
+            # Use get_feature_names_out() to get feature names from the vectorizer
             input_example = pd.DataFrame(
                 X_test_tfidf.toarray()[:5], columns=vectorizer.get_feature_names_out()
-            )  # <--- Added for signature
-
-            # Infer the signature
-            signature = infer_signature(
-                input_example, model.predict(X_test_tfidf[:5])
-            )  # <--- Added for signature
-
-            # Log model with signature
-            mlflow.sklearn.log_model(
-                model,
-                "lgbm_model",
-                signature=signature,  # <--- Added for signature
-                input_example=input_example,  # <--- Added input example
             )
 
-            # Save model info
-            model_path = "lgbm_model"
-            save_model_info(run.info.run_id, model_path, "experiment_info.json")
+            # Infer the signature
+            signature = infer_signature(input_example, model.predict(X_test_tfidf[:5]))
 
-            # Log the vectorizer as an artifact
+            # Log model with signature and input example
+            mlflow.sklearn.log_model(
+                model,
+                name="lgbm_model",
+                signature=signature,
+                input_example=input_example,
+            )
+
+            artifact_uri = mlflow.get_artifact_uri()
+            model_uri = f"runs:/{run.info.run_id}/lgbm_model"
+            model_path = f"{artifact_uri}/lgbm_model"
+
+            # Save model info
+            save_model_info(run.info.run_id, model_uri, "experiment_info.json")
+
             mlflow.log_artifact(os.path.join(root_dir, "tfidf_vectorizer.pkl"))
 
             # Evaluate model and get metrics
