@@ -1,0 +1,5 @@
+outs:
+- md5: 57408b05c2858b519b6597c1aafe1652
+  size: 1222
+  hash: md5
+  path: test_load_model.py
