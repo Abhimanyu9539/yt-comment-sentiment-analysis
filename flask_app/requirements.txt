@@ -1,0 +1,15 @@
+boto3==1.35.36
+Flask==3.0.3
+Flask_Cors==5.0.0
+joblib==1.4.2
+lightgbm==4.6.0
+matplotlib==3.10.8
+mlflow
+mlflow_skinny
+nltk==3.9.1
+numpy==2.4.1
+pandas==2.3.3
+psutil==7.2.1
+scikit-learn==1.8.0
+wordcloud
+scipy==1.17.0
