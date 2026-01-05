@@ -144,7 +144,7 @@ jobs:
           aws deploy create-deployment \
             --application-name yt-chrome-plugin \
             --deployment-config-name CodeDeployDefault.OneAtATime \
-            --deployment-group-name YTChromePluginDeploymentGroup \
+            --deployment-group-name YTChomePluginDeploymentGroup \
             --s3-location bucket=abd-deploy-bucket,key=deployment.zip,bundleType=zip \
             --file-exists-behavior OVERWRITE \
             --region us-east-1
